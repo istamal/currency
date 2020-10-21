@@ -3,11 +3,10 @@ import './App.scss';
 import {
   Layout, Card, Radio, Table, Divider,
 } from 'antd';
-import XMLParser from 'react-xml-parser';
 import 'antd/dist/antd.css';
 import styled from 'styled-components';
-import axios from 'axios';
-import * as source from './sourceConstants/index';
+import JSONService from './dataService/JSONService';
+import XMLService from './dataService/XMLService';
 
 const Heading = styled.h1`
   color: #fff;
@@ -17,21 +16,7 @@ const { Header, Content } = Layout;
 
 function App() {
   const [currency, setCurrency] = React.useState({ name: 'Получение...', value: 'Получение...' });
-  const [currentSource, setCurrentSource] = React.useState(source.XML_SOURCE);
-
-  const fetchData = async () => {
-    const response = await axios.get(currentSource);
-    if (typeof response.data === 'string') {
-      const xml = new XMLParser().parseFromString(response.data);
-      const euro = xml.children.find((el) => el.attributes.ID === 'R01239');
-      console.log('fetching xml');
-      setCurrency({ name: euro.children[3].value, value: euro.children[4].value });
-    } else {
-      const { data: { Valute: { EUR } } } = response;
-      console.log('fetching json');
-      setCurrency({ name: EUR.Name, value: EUR.Value });
-    }
-  };
+  const [currentSource, setCurrentSource] = React.useState(new XMLService());
 
   const columns = [
     {
@@ -56,15 +41,24 @@ function App() {
 
   const handleSourseChange = (event) => {
     setCurrentSource(event.target.value);
-    console.log(currentSource);
+  };
+
+  const getCurrency = async (instance) => {
+    const result = await instance.fetchData();
+    setCurrency(result);
   };
 
   React.useEffect(() => {
-    fetchData();
-    const timer = setInterval(() => fetchData(), 10000);
+    getCurrency(currentSource);
+    const timer = setInterval(() => getCurrency(currentSource), 10000);
     return () => {
       clearInterval(timer);
     };
+    // fetchData();
+    // const timer = setInterval(() => fetchData(), 10000);
+    // return () => {
+    //   clearInterval(timer);
+    // };
   }, [currentSource]);
 
   return (
@@ -83,8 +77,8 @@ function App() {
         >
           <Card title="Euro course">
             <Radio.Group value={currentSource} onChange={handleSourseChange}>
-              <Radio.Button value={source.XML_SOURCE}>Источник 1</Radio.Button>
-              <Radio.Button value={source.JSON_SOURCE}>Источник 2</Radio.Button>
+              <Radio.Button value={new XMLService()}>Источник 1</Radio.Button>
+              <Radio.Button value={new JSONService()}>Источник 2</Radio.Button>
             </Radio.Group>
             <Divider />
             <Table style={{ width: '100%' }} pagination={false} columns={columns} dataSource={data} />
