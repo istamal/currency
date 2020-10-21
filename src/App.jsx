@@ -54,11 +54,6 @@ function App() {
     return () => {
       clearInterval(timer);
     };
-    // fetchData();
-    // const timer = setInterval(() => fetchData(), 10000);
-    // return () => {
-    //   clearInterval(timer);
-    // };
   }, [currentSource]);
 
   return (
